@@ -1,0 +1,17 @@
+{
+  "name": "ts-mono",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm -w frontend run dev",
+    "dev:backend": "npm -w backend run dev",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm -w frontend exec tsc -- --noEmit && npm -w backend exec tsc -- --noEmit",
+    "tsc": "tsc",
+    "tsc6": "tsc6"
+  }
+}
