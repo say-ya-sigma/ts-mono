@@ -2,6 +2,7 @@
 
 - **ゴール**: 両ワークスペースの本番デプロイ構成を理解し、D1 永続化の設計ができる
 - **対象ファイル**: `frontend/wrangler.jsonc`、`backend/wrangler.jsonc`、`README.md` (学習課題)
+- **AI 時代の位置づけ**: AI に本番化を実装させ、セキュリティ・データ整合性・運用の責任をレビューする
 
 ## 1. この講義の到達点のおさらい
 
@@ -161,9 +162,9 @@ app.get("/api/books", async (c) => {
 | 認証 | トークン/セッション。導入時は CORS の `credentials` と第 07 回の信頼モデル | 第 07, 10 回 |
 | 監視 | `observability`、`onError` の構造化ログ (第 04 回) の活用 | 第 04 回 |
 | テスト | `store.ts` (第 07-09 回) は純関数に近くユニットテストの好対象。README 学習課題 5 | 第 07-09 回 |
-| 型共有 | `packages/shared` 化 (第 03 回演習) or OpenAPI 生成 | 第 02, 03 回 |
+| 型共有 | `packages/shared` 化 (第 03 回 AI ドリル) or OpenAPI 生成 | 第 02, 03 回 |
 | ページネーション | `page`/`limit` + `{total, items}` の拡張 (既に包んであるのが効く) | 第 06, 08 回 |
-| 貸出履歴 | `lending_logs` リソースの導入 = REST 設計の再演習 | 第 06 回 |
+| 貸出履歴 | `lending_logs` リソースの導入 = REST 設計の再確認 | 第 06 回 |
 
 README の「学習課題 1〜5」は第 02 (1)、06 (2, 4)、09 (5)、15 (3) 回と
 対応しているのに気づいたでしょうか。講義を通しでやると、
@@ -193,20 +194,38 @@ NEXT_PUBLIC_API_URL=https://backend.<account>.workers.dev \
 ことを突き止めてください。2 つの Worker はリクエストごとに isolate が
 変わってもよい世界 (第 05 回) で動いています。
 
-## 6. 演習
+## 6. AI ドリル — 予測・レビュー・改修
 
-1. **D1 スキーマ設計**: 第 08 回の検索 (`q` の 4 フィールド横断) と
-   ソート (`-` プレフィックス) を SQL に翻訳するクエリを設計せよ。
-   ヒント: `LIKE` の 4 連 OR、`ORDER BY` の動的組立では **カラム名は
-   プレースホルダでなく allowlist で** (第 08 回 comparator テーブルの SQL 版)
-2. **`resetToSeed` をトランザクションで**: DELETE + 全 INSERT を
-   `batch()` または `WITH` で原子的にする方法を D1 ドキュメントで調べよ
-3. **デプロイ構成の棚卸し**: frontend を `frontend.<account>.workers.dev` 以外の
-   独自ドメインで出すとき、CORS・`NEXT_PUBLIC_API_URL`・`services` の 
-   self-reference 名をそれぞれどう更新するか整理せよ
-4. **キャッシュ再考**: `GET /api/books` に `Cache-Control` を付けるとして、
-   「貸出 (PATCH) 後に古い一覧を見る」問題とどう折り合いを付けるか
-   (Cache-Control + ETag の戦略を 1 つ提案)
+### 6.1 予測 — 実行前に当てる
+
+1. `Map` のままデプロイした backend を再起動した場合、登録した本が残るかを予測し、
+   D1 に置き換えた場合との違いを説明する
+2. `NEXT_PUBLIC_API_URL` を deploy コマンドの後で変更した場合、既存の frontend の
+   bundle が新しい backend を向くかを予測する
+
+### 6.2 レビュー — AI の出力を審査する
+
+AI が D1 化のために次のコードを提案した。SQL インジェクション、列名の allowlist、
+snake_case から `Book` への変換、リセットの原子性をレビューする。
+
+```ts
+const sort = c.req.query("sort") ?? "registered_at"
+const { results } = await c.env.DB
+  .prepare(`SELECT * FROM books ORDER BY ${sort}`)
+  .all()
+
+await c.env.DB.exec("DELETE FROM books")
+for (const book of SEED_BOOKS) {
+  await c.env.DB.prepare("INSERT INTO books (...) VALUES (...)").bind(book).run()
+}
+```
+
+### 6.3 改修 — AI の失敗を直す
+
+README の学習課題から 1 つを選び、AI に実装させる。D1 化なら `q` の 4 フィールド
+検索・`sort` の allowlist・`reset` の transaction を、ページネーションなら API・
+`api.ts`・UI の契約をレビューし、デプロイ前に `typecheck`・`lint`・`build` と
+本番チェックリストを通す。
 
 ## 7. まとめ (シリーズ全体)
 
@@ -225,7 +244,7 @@ NEXT_PUBLIC_API_URL=https://backend.<account>.workers.dev \
 ## 8. 修了課題 (発展)
 
 - **Level 1**: `store.ts` のバリデーションと `listBooks` の
-  ユニットテストを追加する (第 07-08 回演習の集大成)
+  ユニットテストを追加する (第 07-08 回 AI ドリルの集大成)
 - **Level 2**: ページネーション (`page`/`limit`) を API・クライアント・UI に通す
 - **Level 3**: D1 化を完了させ、シード 15 冊を登録するマイグレーションを作る
 - **Level 4**: 貸出履歴 (`lending_logs`) を導入し、履歴画面を加える

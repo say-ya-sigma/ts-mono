@@ -2,6 +2,7 @@
 
 - **ゴール**: 小コンポーネントの分割判断と Tailwind による効率的なスタイリングを習得する
 - **対象ファイル**: `frontend/src/components/BookManager.tsx` 1-159 行 (表示コンポーネント群) と表部分
+- **AI 時代の位置づけ**: 型の網羅性・アクセシビリティ・画面状態を、見た目だけでなく根拠付きでレビューする
 
 ## 1. このファイルのコンポーネント構成
 
@@ -152,7 +153,7 @@ const buttonClass =
 - エラー表示が色だけでなく文字でも伝わるように `role="alert"` を付ける等
 
 「デモの簡潔さ」と「配慮の網羅」のトレードオフを意識できることが
-この素材を使う利点です。演習で改善してもらいます。
+この素材を使う利点です。AI ドリルで改善してもらいます。
 
 ## 6. コンポーネント分割の判断基準 (まとめ直し)
 
@@ -179,16 +180,39 @@ const buttonClass =
 3. **`Stars` を絵文字に**: `"★"` を `"★★"` のような別文字に変えて
    `repeat` の動作を確認 → 戻す
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **`CategoryBadge` を作れ**: カテゴリを `StatusBadge` 風のラベルで表示する
-   コンポーネントを追加せよ (色はカテゴリ数ぶん定義する方法を考える — 
-   `BOOK_CATEGORIES` は 6 個。`Record<string, string>` で足りるか?)
-2. **削除ボタンに `aria-label`** を付与せよ (`aria-label={`「${book.title}」を削除`}``)
-3. **`inputClass` を広げる**: 第 08 回演習の `publishedYearMin` を UI に足す場合、
-   どこにどのクラスで追加するか設計せよ (実装は任意)
-4. **思考問題**: `AddBookForm` を「カテゴリごとに別フォーム」に分割すると
-   どんな不利益があるか? (状態の重複・UI の一貫性の観点で)
+### 8.1 予測 — 実行前に当てる
+
+1. `BookStatus` に `"紛失"` を追加したとき、`StatusBadge` のどこでコンパイルエラーが
+   出るか、`Record<BookStatus, string>` の意味から予測する
+2. `rating === 0` と `rating === 5` が `Stars` に渡ったときの表示と、一覧が 0 件・
+   loading 中の表示をそれぞれ予測する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が「柔軟な UI」にするため、次の変更を提案した。型の網羅性、React の key、
+アクセシビリティ、Tailwind の状態表現の観点から問題を指摘する。
+
+```tsx
+const styles: Record<string, string> = {
+  在庫あり: "bg-emerald-100",
+  貸出中: "bg-amber-100",
+}
+
+{books.map((book, index) => (
+  <tr key={index}>
+    <button onClick={() => remove(book.id)}>削除</button>
+    <div className="text-red-500">{error}</div>
+  </tr>
+))}
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に `CategoryBadge` とアクセシビリティ改善を実装させる。削除ボタンの
+`aria-label`、エラーの `role="alert"`、カテゴリの色の未定義値、テーブルの意味的な
+構造を確認し、見た目が変わるだけでなくキーボード操作と読み上げでも説明できる状態にする。
 
 ## 9. まとめ
 

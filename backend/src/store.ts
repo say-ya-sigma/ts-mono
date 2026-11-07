@@ -3,11 +3,12 @@
 
 import {
   BOOK_STATUSES,
-  SEED_BOOKS,
   type Book,
   type BookInput,
   type BookStatus,
-} from "./books"
+} from "book-types"
+
+import { SEED_BOOKS } from "./books"
 
 const books = new Map<string, Book>()
 for (const book of SEED_BOOKS) books.set(book.id, book)

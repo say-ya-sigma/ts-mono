@@ -2,6 +2,7 @@
 
 - **ゴール**: Workers ランタイムの特性 (特に「状態の寿命」) を理解し、wrangler 設定を読める
 - **対象ファイル**: `backend/wrangler.jsonc`、`backend/worker-configuration.d.ts`、`backend/src/store.ts` (冒頭)
+- **AI 時代の位置づけ**: 実行環境の制約を仕様として読み、Node.js 前提の AI 実装を見抜く
 
 ## 1. Cloudflare Workers とは
 
@@ -131,15 +132,33 @@ curl http://localhost:8787/api/books | grep -o テスト本 || echo '消えた'
 npx wrangler types --help
 ```
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **再起動 vs リセットの違いを言葉で**: 「`POST /api/reset` で戻る」のと
-   「再起動で戻る」のは、コード上どこが違うか?
-   (`store.ts` の `resetToSeed` と 12-13 行目の初期化を比べよ)
-2. **wrangler.jsonc を調べる**: `compatibility_date` を 1 か月戻すと何が起こり
-   うるか、公式ドキュメントで調べる (論点: 後方互換の保障期間)
-3. **思考問題**: この backend を「複数人で同時利用する社内デモ」として
-   1 か月動かすなら、どこが最初に破綻するか? (ヒント: isolate の分散と凍結)
+### 8.1 予測 — 実行前に当てる
+
+1. `POST /api/reset` と backend の再起動は、どちらが関数を実行し、どちらが
+   モジュール初期化をやり直すかを予測する
+2. `books` を module scope の `Map` に置く構成を本番で 2 拠点に広げたとき、
+   片方の拠点で追加した本が必ずもう片方に見えるかを答える
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が Node.js 用の永続化として次の案を出した。Workers の isolate と Web 標準 API の
+観点から、どの前提が成立しないかを指摘する。
+
+```ts
+import { readFile, writeFile } from "node:fs/promises"
+
+export async function saveBook(book: Book) {
+  await writeFile("books.json", JSON.stringify(book))
+}
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に「この Map を本番で失わないようにして」と依頼し、D1・Durable Objects・KV の
+どれを採用するか比較させる。回答をそのまま採用せず、データの一貫性・検索・集計・
+コストの観点でレビューし、`wrangler.jsonc` に必要な設定と採用理由を自分で確定する。
 
 ## 9. まとめ
 

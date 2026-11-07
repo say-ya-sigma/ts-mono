@@ -77,7 +77,7 @@ function AddBookForm({ onCreated }: { onCreated: () => void }) {
   const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }))
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault()
     setErrors([])
     setSubmitting(true)

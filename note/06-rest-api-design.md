@@ -2,6 +2,7 @@
 
 - **ゴール**: リソース指向の URL 設計と、適切な HTTP メソッド/ステータスコードを選べる
 - **対象ファイル**: `backend/src/index.ts` (全ルート)、`README.md` (API リファレンス)
+- **AI 時代の位置づけ**: 動く URL ではなく、HTTP の意味と将来の変更コストをレビューする
 
 ## 1. REST のこころ — 「URL はリソースを表す」
 
@@ -157,16 +158,34 @@ curl -i -X DELETE http://localhost:8787/api/books/b15  # → 404
 curl -X POST http://localhost:8787/api/reset
 ```
 
-## 7. 演習
+## 7. AI ドリル — 予測・レビュー・改修
 
-1. **ステータスコード当てクイズ**: (a) 存在しない category で検索
-   (b) `publishedYear: "二千" ` で登録 (c) 削除済み ID を PATCH —
-   それぞれ何が返るか予想してから curl で確認せよ
-2. **PUT を実装してみる**: `PUT /api/books/:id` を「全フィールド必須の置き換え」
-   として追加し、PATCH との挙動の差を確認する (store.ts は使い回してよい)
-3. **思考問題**: `GET /api/books?status=貸出中` を「貸出中一覧」という
-   別リソース `GET /api/loans` にすべき状況を 1 つ挙げよ
-   (ヒント: 貸出に「貸出日」「返却期限」などの属性が付いたとき)
+### 7.1 予測 — 実行前に当てる
+
+1. (a) 存在しない category で検索、(b) `publishedYear: "二千"` で登録、
+   (c) 削除済み ID を PATCH した場合のステータスを予測してから `curl -i` で確認する
+2. `DELETE /api/books/b15` を 2 回実行したとき、なぜ 2 回目が同じ成功にならず
+   404 になるのかを、冪等性の定義と区別して説明する
+
+### 7.2 レビュー — AI の出力を審査する
+
+AI が「分かりやすい API」を次のように設計した。HTTP メソッド、ステータスコード、
+エラー body の契約から問題点を指摘し、どの既存ルートに置き換えるべきか答える。
+
+```ts
+app.post("/api/deleteBook", async (c) => {
+  const id = c.req.query("id")
+  const result = await store.deleteBook(id)
+  if (!result.ok) return c.json({ error: "削除できませんでした" })
+  return c.json({ error: null })
+})
+```
+
+### 7.3 改修 — AI の失敗を直す
+
+AI に `PUT /api/books/:id` を追加させ、「全フィールド必須の置き換え」として
+実装する。PATCH と同じ入力を受け入れていないか、成功が 200、未知 ID が 404、
+不正な内容が 400 になっているかをレビューし、API リファレンスも更新する。
 
 ## 8. まとめ
 

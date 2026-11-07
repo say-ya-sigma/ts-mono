@@ -2,6 +2,7 @@
 
 - **ゴール**: `unknown` 入力を検証して型のある値に変換するパターン (結果型) を習得する
 - **対象ファイル**: `backend/src/store.ts` (バリデーション〜CRUD 部、1-207 行)
+- **AI 時代の位置づけ**: 境界で型を与える責任を明確にし、AI の「とりあえず通す」実装を見抜く
 
 ## 1. なぜサーバー側でバリデーションが必要か
 
@@ -256,16 +257,36 @@ curl http://localhost:8787/api/books/b01 | grep -o '"borrower":[^,]*'
 curl -X POST http://localhost:8787/api/reset
 ```
 
-## 9. 演習
+## 9. AI ドリル — 予測・レビュー・改修
 
-1. **ISBN チェックデジット**: ISBN-13 の検算 (各桁×{1,3} 交替和 mod 10 = 0) を
-   `validateBookInput` に追加せよ (README の curl サンプルが通ることを確認)
-2. **`rating` の上限エラー文言を個別化** せよ (現在は他と同じ形式。
-   「rating は 0〜5 の整数にしてください (0=未評価)」を review する)
-3. **思考問題**: `updateBook` で `title` を空文字にする PATCH を送ると?
-   マージ再検査方式だと「省略」と「空文字」の区別がどう扱われるか確認せよ
-4. **発展**: zod のようなスキーマライブラリで `validateBookInput` を
-   書き直すと何行になるか調べる (依存追加はしなくてよい)
+### 9.1 予測 — 実行前に当てる
+
+1. `PATCH {"status":"貸出中"}` (borrower なし) と、`PATCH {"title":""}` の結果を
+   予測する。「省略」と「空文字」がマージ再検査でどう扱われるかも説明する
+2. `isbn` に `978-4274210084` を渡したとき、ハイフンを除去する処理が検査の前後
+   どちらにあるべきかを予測し、順序を入れ替えた場合の結果を確認する
+
+### 9.2 レビュー — AI の出力を審査する
+
+AI が「JSON を柔軟に受け入れる」ために次の実装を提案した。少なくとも 4 つの問題を
+見つけ、`unknown`・正規化・判別可能ユニオン・条件付き必須の説明に結び付ける。
+
+```ts
+function validateBookInput(body: unknown): ValidationResult {
+  const b = body as any
+  const isbn = String(b.isbn ?? "")
+  const status = b.status as BookStatus
+  const borrower = String(b.borrower ?? "")
+  if (!ISBN_RE.test(isbn)) return { ok: false, errors: ["isbn が不正です"] }
+  return { ok: true, value: { ...b, isbn, status, borrower } }
+}
+```
+
+### 9.3 改修 — AI の失敗を直す
+
+AI に ISBN-13 のチェックデジット検査を追加させる。生成された実装について、
+ハイフン除去・桁数・`X` の扱い・既存のエラー蓄積を確認し、README の正常な curl と
+不正な ISBN の両方が期待どおりになるまで修正する。
 
 ## 10. まとめ
 

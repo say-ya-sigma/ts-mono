@@ -1,16 +1,20 @@
 {
   "name": "ts-mono",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "packages/book-types"
   ],
   "scripts": {
     "dev:frontend": "npm -w frontend run dev",
     "dev:backend": "npm -w backend run dev",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm -w frontend exec tsc -- --noEmit && npm -w backend exec tsc -- --noEmit",
+    "typecheck": "npm -w frontend exec tsc -- --noEmit && npm -w backend exec tsc -- --noEmit && npm -w book-types exec tsc -- --noEmit",
     "tsc": "tsc",
     "tsc6": "tsc6"
   }

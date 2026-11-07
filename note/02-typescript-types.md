@@ -2,6 +2,7 @@
 
 - **ゴール**: ユニオン型・`as const`・ユーティリティ型を使い、データモデルを型で厳密に記述できる
 - **対象ファイル**: `backend/src/books.ts` (全体)、`frontend/src/lib/api.ts` (型定義部分)
+- **AI 時代の位置づけ**: 型を AI への仕様書にし、生成コードの入力・出力の逸脱をコンパイラで検出する
 
 ## 1. この回の主役: `backend/src/books.ts`
 
@@ -151,7 +152,7 @@ type SeedBook = Omit<Book, "id" | "borrower" | "registeredAt" | "updatedAt"> & {
 - **肯定的な解釈**: `api.ts` は「API との境界」であり、バックエンドの内部都合で
   型が変わってもフロントが壊れないよう、フロントはフロントで契約を宣言している
 - **否定的な解釈**: 両方を更新し忘れると静かに不整合が起きる。第 03 回で
-  共有パッケージ化を演習として扱う
+  共有パッケージ化を AI ドリルとして扱う
 
 ## 7. ハンズオン
 
@@ -162,15 +163,34 @@ curl http://localhost:8787/api/books | head -c 400   # 実際の JSON と Book �
 型は JSON の「形」の宣言です。レスポンスの各キーが `Book` のフィールドと
 対応していることを確認してください。
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **`Book` の拡張 (README の学習課題 1)**: 両ワークスペースに `description: string`
-   を追加し、`BookInput` にも入れる。`npm run typecheck` を通すまでが演習
-2. **`as const` の体感**: 新しい `BookStatus` `"紛失"` を `BOOK_STATUSES` に
-   追加し、`npm -w backend run typecheck` がどこでエラーを出すか観察する
-   (終わったら元に戻す)
-3. **思考問題**: `rating` を `0 | 1 | 2 | 3 | 4 | 5` のユニオン型にすると
-   どんな利点と欠点があるか? (ヒント: JSON からの入力をどう検証するか)
+### 8.1 予測 — 実行前に当てる
+
+1. `BOOK_STATUSES` に `"紛失"` を追加したとき、`Record<BookStatus, string>` を
+   使う `StatusBadge` がなぜ型エラーになるか、エラー箇所を実行前に予測する
+2. `BookInput` に `id` と `updatedAt` を書けるようにした場合、クライアントが
+   何を決められてしまうかを説明する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が入力型を簡単にするため、次の変更を提案した。少なくとも 2 つの契約違反を
+見つけ、`Pick` / `Omit` の意図と照らして指摘する。
+
+```ts
+export type BookInput = Partial<Book>
+
+export function createSeedBook(input: BookInput): Book {
+  return { ...input } as Book
+}
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に README の学習課題 1 (`description` の追加) を実装させる。backend の
+`Book`、`BookInput`、frontend の API 型を更新し、`npm run typecheck` が通るまで
+修正する。生成差分に `id`・時刻・`borrower` の責務変更が混ざっていないかも
+レビュー記録に残す。
 
 ## 9. まとめ
 

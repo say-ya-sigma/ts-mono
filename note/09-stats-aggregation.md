@@ -2,6 +2,7 @@
 
 - **ゴール**: 効率的な集計処理と「集計結果の型設計」を習得する
 - **対象ファイル**: `backend/src/store.ts` 209-245 行 (`getStats`)、`frontend/src/components/BookManager.tsx` (StatCard 表示部分)、`frontend/src/lib/api.ts` (Stats 型)
+- **AI 時代の位置づけ**: 集計の定義と空データの境界を先に決め、AI の一見正しい計算を検証する
 
 ## 1. 統計はなぜ別エンドポイントか
 
@@ -149,7 +150,7 @@ setStats(s)
 - 統計は 4 枚のカードとして表示。`byCategory` (カテゴリ別件数) と
   `averageRating`、`publishedYearRange` は **API が返しているが UI は未使用**
   — 「サーバーは汎用に、UI は必要なだけ」の例であり、
-  「カテゴリ別内訳を表示せよ」は自然な発展演習です
+  「カテゴリ別内訳を表示せよ」は自然な発展課題です
 - 第 02 回の復習: `stats.byStatus["在庫あり"]` が `Record<BookStatus, number>` の
   型恩恵 (typo しない、全キーを列挙できる) を受けている
 
@@ -174,16 +175,33 @@ curl http://localhost:8787/api/stats
 curl -X POST http://localhost:8787/api/reset
 ```
 
-## 7. 演習
+## 7. AI ドリル — 予測・レビュー・改修
 
-1. **`averageRating` を「評価済みのみの平均」に変更** せよ。ただし
-   評価済み 0 冊のときは 0 を返すこと (変わった挙動を上のハンズオン 3 で確認)
-2. **`byCategory` を UI に表示** せよ — `StatCard` を並べるだけでもよい。
-   `averageRating`・`publishedYearRange` も加えるとさらに良い
-3. **`maxRatingBook`** (最高評価の本のタイトル) を stats に追加せよ。
-   「同点が複数」のときどう表現するか (`string[]` にする? 1 つだけ?) まで決める
-4. **思考問題**: 本が 10 万冊になったら `getStats` は毎リクエスト計算させるべきか?
-   (検討候補: 計算タイミングの遅延、キャッシュ、第 05 回の isolate の性質)
+### 7.1 予測 — 実行前に当てる
+
+1. 全件を削除した直後の `GET /api/stats` で、`averageRating`、`oldest`、`newest`、
+   `byStatus` がどうなるかを型定義から予測して確認する
+2. 貸出中の本を 1 冊増やしたとき、一覧の検索条件を指定していなくても `byStatus` と
+   `total` が変わる理由を説明する
+
+### 7.2 レビュー — AI の出力を審査する
+
+AI が平均評価を「評価済みの本だけ」に変更した。仕様と計算の分母が一致しているか、
+空配列と未評価だけのケースで壊れないかをレビューする。
+
+```ts
+const rated = all.filter((b) => b.rating > 0)
+const ratingSum = all.reduce((sum, b) => sum + b.rating, 0)
+const averageRating = rated.length
+  ? Math.round((ratingSum / rated.length) * 10) / 10
+  : 0
+```
+
+### 7.3 改修 — AI の失敗を直す
+
+AI に `maxRatingBooks` (最高評価の本のタイトル一覧) を stats に追加させる。
+同点・全件未評価・空データの仕様を先に決め、backend の `Stats` 型、集計、frontend の
+表示を揃える。10 万冊を想定したときのキャッシュ方針もレビュー記録に残す。
 
 ## 8. まとめ
 

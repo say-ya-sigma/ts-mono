@@ -2,6 +2,7 @@
 
 - **ゴール**: Same-Origin Policy と CORS の仕組みを理解し、開発/本番で正しく設定できる
 - **対象ファイル**: `backend/src/index.ts:9`、`frontend/src/lib/api.ts:69`、`frontend/.dev.vars`
+- **AI 時代の位置づけ**: curl の成功とブラウザの成功を区別し、セキュリティ設定の意味をレビューする
 
 ## 1. なぜこの回が存在するか
 
@@ -181,15 +182,33 @@ curl -i http://localhost:8787/ | grep -i access-control || echo '/ には CORS �
    ブラウザをリロード → コンソールの CORS エラーと Network の失敗を観察 →
    **コメントを戻す**
 
-## 9. 演習
+## 9. AI ドリル — 予測・レビュー・改修
 
-1. **上記の「壊し確認」を実施し、観察メモを取る** — curl では 200 なのに
-   ブラウザでは読めない、を自分の目で確認するのがこの回の本題
-2. **`cors()` に origin 制限を入れる**: `origin: ["http://localhost:3000"]` に
-   変更し、ブラウザからまだ動くことを確認せよ (Origin が一致するため)。
-   次に `origin: ["https://example.com"]` にして壊れることも確認せよ (終わったら戻す)
-3. **思考問題**: SameSite Cookie と CORS はそれぞれ「リクエストを送る側」と
-   「レスポンスを読む側」のどれを防ぐものか調べて表にまとめよ
+### 9.1 予測 — 実行前に当てる
+
+1. `curl -i -X OPTIONS` とブラウザからの POST で、どのヘッダーとリクエストが
+   観測できるかを予測する
+2. CORS をコメントアウトした状態で、curl とブラウザの結果が同じになるかを予測し、
+   「リクエストが送れない」のか「レスポンスを読めない」のかを区別する
+
+### 9.2 レビュー — AI の出力を審査する
+
+AI が本番の CORS 設定として次を提案した。ワイルドカード、credentials、パス指定、
+許可メソッドの組み合わせにどんな問題があるか指摘する。
+
+```ts
+app.use("/api", cors({
+  origin: "*",
+  credentials: true,
+  allowMethods: ["GET"],
+}))
+```
+
+### 9.3 改修 — AI の失敗を直す
+
+AI に開発用 `http://localhost:3000` と本番用 origin の allowlist を実装させる。
+`OPTIONS` の検証、GET/POST/PATCH/DELETE の許可、`NEXT_PUBLIC_API_URL` の切り替えを
+確認し、curl とブラウザの両方で壊れていないことを記録する。
 
 ## 10. まとめ
 

@@ -2,6 +2,7 @@
 
 - **ゴール**: フロント↔API の境界を 1 モジュールに集約する設計とジェネリクス活用を習得する
 - **対象ファイル**: `frontend/src/lib/api.ts` (127 行、全体)
+- **AI 時代の位置づけ**: 型付き境界を AI の出力検査点にし、`as` と実データの差を意識する
 
 ## 1. このファイルの役割 — 「境界の門番」
 
@@ -175,18 +176,38 @@ npm run dev:frontend   # backend も起動しておく
 3. `.dev.vars` に `NEXT_PUBLIC_API_URL=http://localhost:9999` を書いて
    フロントを再起動 → 一覧が取れないことを確認 → **ファイルを空に戻して** 再起動
 
-## 7. 演習
+## 7. AI ドリル — 予測・レビュー・改修
 
-1. **`getBook` を追加** せよ (`request<{ item: Book }>(`/api/books/${id}`)`)。
-   UI は作らなくてよい (境界モジュールの拡張練習)
-2. **`ApiError` に `status` を持たせる**: `constructor(errors: string[], status?: number)` 
-   に拡張し、`request` で渡す。UI で 404 のときだけ特別扱いできるようにせよ
-3. **タイムアウトを付ける**: `AbortSignal.timeout(5000)` を fetch の `signal` に
-   渡すように変更し、backend を止めたときの挙動 (5 秒で失敗) を確認せよ
-4. **思考問題**: `request<T>` の戻り値を `Promise<T>` ではなく
-   「`{ ok: true; data: T } | { ok: false; errors: string[] }` な Promise」にすると
-   どう変わるか? (第 07 回の結果型との対比。throw/instanceof を全部 if に
-   書き換える作業量も見積もってみよ)
+### 7.1 予測 — 実行前に当てる
+
+1. backend が 404 を返したとき、`fetch` 自体が reject するか、`request<T>` の
+   `res.ok` がどこで検出するかを予測する
+2. `q=コード&category=技術書` と空文字のパラメータが、`URLSearchParams` でどんな
+   URL になるかを予測し、第 08 回のサーバー側の `if (q)` と対応させる
+
+### 7.2 レビュー — AI の出力を審査する
+
+AI が URL 組み立てとエラー処理を簡略化した。エンコード、空値、4xx の扱い、機密情報の
+公開という観点から問題を指摘する。
+
+```ts
+function withQuery(params: ListParams) {
+  return `?q=${params.q}&category=${params.category}`
+}
+
+async function request<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`)
+  const data = await res.json()
+  if (!res.ok) return data as T
+  return data as T
+}
+```
+
+### 7.3 改修 — AI の失敗を直す
+
+AI に `getBook` の追加、`ApiError.status`、5 秒の timeout を実装させる。正常応答と
+404、backend 停止時をそれぞれ確認し、`request<T>` の型引数が実データを検証した
+ことにはならない点をレビュー記録に明記する。
 
 ## 8. まとめ
 

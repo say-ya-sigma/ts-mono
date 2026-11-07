@@ -11,7 +11,7 @@ backend  (Hono on Cloudflare Workers, wrangler dev)  http://localhost:8787
 
 ## 起動方法
 
-前提: Node.js 20+ / npm 11+ (workspaces)
+前提: Node.js 22+ / npm 11+ (workspaces)
 
 ```bash
 npm install
@@ -95,7 +95,7 @@ frontend/
   src/lib/api.ts              型付き API クライアント (フロント↔API の境界)
 ```
 
-## 学習課題 (自分で改造してみる)
+## 学習課題 (AI と協働して改造してみる)
 
 1. **フィールドを増やす** — `Book` に `description` (あらすじ) を追加し、
    バリデーション・UI・詳細表示まで通してみる
@@ -104,6 +104,10 @@ frontend/
    `d1_databases` を有効化して SQLite (D1) に保存すると本番に近い構成になる
 4. **貸出履歴** — `lending_logs` の概念を導入し、誰がいつ借りたかを追跡
 5. **テスト** — `store.ts` のバリデーション・ソートロジックにユニットテストを追加
+
+これらの課題は、AI に実装を依頼してレビューする卒業課題としても利用できます。
+仕様・レビュー指摘・検証結果まで含めた進め方は [`note/16-capstone.md`](note/16-capstone.md)
+を参照してください。
 
 ## 開発コマンド
 

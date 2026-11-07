@@ -1,40 +1,4 @@
-// 書籍データの型定義・シードデータ・インメモリストア
-// ※ デモ用のためメモリ上に保持(再起動でリセット)。本番では D1 / Durable Objects を使う。
-
-export type BookStatus = "在庫あり" | "貸出中" | "予約中"
-
-export const BOOK_STATUSES: BookStatus[] = ["在庫あり", "貸出中", "予約中"]
-
-export const BOOK_CATEGORIES = [
-  "文学",
-  "技術書",
-  "実用書",
-  "ビジネス",
-  "科学",
-  "歴史",
-] as const
-
-export type BookCategory = (typeof BOOK_CATEGORIES)[number]
-
-export interface Book {
-  id: string
-  title: string
-  author: string
-  publisher: string
-  isbn: string
-  category: BookCategory | (string & {})
-  publishedYear: number
-  status: BookStatus
-  rating: number
-  borrower: string | null
-  registeredAt: string
-  updatedAt: string
-}
-
-export type BookInput = Pick<
-  Book,
-  "title" | "author" | "publisher" | "isbn" | "category" | "publishedYear" | "rating"
-> & { status?: BookStatus; borrower?: string | null }
+import { Book } from "book-types"
 
 const iso = (daysAgo: number) =>
   new Date(Date.now() - daysAgo * 86_400_000).toISOString()

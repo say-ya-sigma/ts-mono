@@ -1,45 +1,6 @@
-// バックエンド (Hono on Cloudflare Workers, http://localhost:8787) の
-// 型付き API クライアント。この 1 ファイルがフロントエンド ↔ API の境界。
-
-export type BookStatus = "在庫あり" | "貸出中" | "予約中"
-
-export const BOOK_STATUSES: BookStatus[] = ["在庫あり", "貸出中", "予約中"]
-
-export const BOOK_CATEGORIES = [
-  "文学",
-  "技術書",
-  "実用書",
-  "ビジネス",
-  "科学",
-  "歴史",
-] as const
-
-export interface Book {
-  id: string
-  title: string
-  author: string
-  publisher: string
-  isbn: string
-  category: string
-  publishedYear: number
-  status: BookStatus
-  rating: number
-  borrower: string | null
-  registeredAt: string
-  updatedAt: string
-}
-
-export interface BookInput {
-  title: string
-  author: string
-  publisher: string
-  isbn: string
-  category: string
-  publishedYear: number
-  rating?: number
-  status?: BookStatus
-  borrower?: string | null
-}
+import type { Book, BookInput, BookStatus } from "book-types"
+export  { BOOK_CATEGORIES, BOOK_STATUSES } from "book-types"
+export { Book, BookStatus }
 
 export interface ListParams {
   q?: string

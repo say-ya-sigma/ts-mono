@@ -2,6 +2,7 @@
 
 - **ゴール**: 一覧系 API のクエリ設計と、純関数的な検索/ソートの実装パターンを習得する
 - **対象ファイル**: `backend/src/store.ts` 116-151 行 (`listBooks`)、`backend/src/index.ts:27-35`、`frontend/src/lib/api.ts` 95-107 行
+- **AI 時代の位置づけ**: 入力仕様・比較関数・境界条件を分解し、もっともらしい検索実装を検証する
 
 ## 1. 一覧 API のインターフェース
 
@@ -68,7 +69,7 @@ if (status) result = result.filter((b) => b.status === status)
 - 検索条件の誤りは「データを破壊しない」→ 400 ではなく空結果でも許容できる
 - 一方で「存在しない category の選択肢が UI に露出する」バグを検知しにくくなる
 - 厳格にやるなら `category` を `BOOK_CATEGORIES` に一致するか検査し
-  不一致は 400 — 演習で扱います
+  不一致は 400 — AI ドリルで扱います
 
 ## 4. ソート — `-` プレフィックスの記法
 
@@ -123,7 +124,7 @@ Mastodon API 等で採用されており、次の利点があります。
 ECMAScript 2020 以降、`Array.prototype.sort` は **安定** (同順の要素は
 元の順を維持) が保証されています。この API のデータは `id` が一意なので
 ここでは問題になりませんが、「第二ソートキー」が必要になったら
-`comparator` をつなげる設計に拡張できます (演習 3)。
+`comparator` をつなげる設計に拡張できます (AI ドリルの改修)。
 
 ## 5. 実装スタイル — 「段階的な絞り込み」の純関数
 
@@ -142,7 +143,7 @@ return result
 - 第 09 回の `getStats` と対比すると、listBooks は **全件保持型**
   (ページネーション未実装)。`{ total, items }` の total は「絞り込み後の件数」
   (第 06 回 5 節) で、まだ全件を返しています — README 学習課題 2 が
-  page/limit 導入の演習です
+  page/limit 導入の AI ドリルです
 
 ## 6. クライアントとの契約 — 疎通の確認
 
@@ -175,18 +176,35 @@ curl "http://localhost:8787/api/books?sort=関係ないキー"    # 登録日順
 # 5. ブラウザで同じことをする (Network タブで URL を確認)
 ```
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **`publishedYearMin` / `publishedYearMax`** フィルタを追加せよ
-   (`2000年以降` のボタンを作るつもりで) — `index.ts` (ルート)・`store.ts` (ロジック)・
-   `api.ts` (クライアント) の 3 か所に触る必要があることを体感する
-2. **未知 category を 400 に**: `listBooks` に渡す前に `category` が
-   `BOOK_CATEGORIES` に含まれるか検査するのは index.ts と store.ts の
-   どちらに置くべきか? 両案を比べて結論を出せ
-3. **第二ソートキー**: `sort=author` のとき同著者が同順にならないよう、
-   同点なら `title` 順で並べ替えよ (comparator の合成: `(a,b) => c1(a,b) || c2(a,b)`)
-4. **思考問題**: `q` の検索を「AND 検索 (空白区切りで複数語)」に拡張すると
-   どう書くか (`"季節 誌"` のような入力を想定)
+### 8.1 予測 — 実行前に当てる
+
+1. `q=オライリー`、`category=技術書&status=在庫あり`、`sort=-publishedYear` の
+   結果が、どの処理順で何件になるかを予測してから curl で確認する
+2. `sort=関係ないキー` と `sort=-関係ないキー` が 500 ではなく既定順になる理由を、
+   comparator のフォールバックから説明する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が検索とソートを短く書き直した。コンパイルエラー、元データの破壊、降順の向き、
+未知キーの扱いのうち、該当する問題をすべて指摘する。
+
+```ts
+let result = books.values()
+if (q) result = result.filter((b) => b.title.includes(q))
+result.sort((a, b) => {
+  const value = a.publishedYear - b.publishedYear
+  return sort.startsWith("-") ? value : -value
+})
+return result
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に `publishedYearMin` / `publishedYearMax` と第二ソートキーを追加させる。
+`index.ts`・`store.ts`・`api.ts` の契約が揃っているか、空文字や数値でない入力が
+どう扱われるかをレビューし、`q` の AND 検索を入れる場合は仕様も先に書く。
 
 ## 9. まとめ
 

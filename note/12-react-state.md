@@ -2,6 +2,7 @@
 
 - **ゴール**: 実務的なフックの使い方 (状態設計・副作用・デバウンス・並行取得) を習得する
 - **対象ファイル**: `frontend/src/components/BookManager.tsx` (163-417 行を主に)
+- **AI 時代の位置づけ**: 状態・副作用・依存関係を追跡し、AI が作る race condition を実験で確かめる
 
 ## 1. `BookManager` の状態設計
 
@@ -201,18 +202,41 @@ const set = (key: keyof FormState) => (e: React.ChangeEvent<...>) =>
    `const items = await api.list(...)` → `const s = await api.stats()` 
    (分割代入も書き換え)。Network のウォーターフォールが直列になるのを確認 → 戻す
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **「登録したら検索条件をリセット」**: `AddBookForm` の `onCreated` を
-   `refresh` から `() => { setQ(""); setCategory(""); setStatus(""); refresh() }` 
-   のような関数に変えるとどうなるか検証せよ (q が変わればデバウンス経由で
-   再取得が走る — 二重取得にならないか観察すること)
-2. **ローディングをフェッチごとに細分化**: `loading` は一覧と統計で共有
-   している。`Promise.all` の完了だけではなく「ボタン操作中」を示すための
-   `busy` 状態を追加してみよ (該当行だけ spinner 表示にする等)
-3. **思考問題**: `lendingId` / `borrowerName` を「行ごとに 1 組」持つように
-   `Record<string, string>` にすると、複数行の貸出入力を同時に開ける。
-   その場合の不利益を 1 つ挙げよ (ヒント: 操作の局所性と確認の手間)
+### 8.1 予測 — 実行前に当てる
+
+1. 検索文字を 300ms 以内に 3 文字入力したとき、リクエストが何回飛ぶかを予測し、
+   Network パネルで確認する
+2. `Promise.all` を一覧取得の後の stats 取得に書き換えたとき、待ち時間と loading の
+   表示がどう変わるかを予測する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が `refresh` を短く書き直した。依存配列、タイマーの cleanup、失敗時の loading、
+古い検索条件の捕捉 (stale closure) の観点から問題を指摘する。
+
+```tsx
+const refresh = useCallback(async () => {
+  const [{ items }, s] = await Promise.all([
+    api.list({ q, category, status, sort }),
+    api.stats(),
+  ])
+  setBooks(items)
+  setStats(s)
+  setLoading(false)
+}, [])
+
+useEffect(() => {
+  setTimeout(refresh, 300)
+}, [refresh])
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に「登録後は検索条件をリセットし、操作中の行だけ busy 表示にして」と依頼する。
+生成された変更を適用し、デバウンスによる二重取得がないか、失敗時に `loading` が
+永久に残らないか、複数行の入力状態を持つ設計が本当に必要かを検証する。
 
 ## 9. まとめ
 

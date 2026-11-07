@@ -2,6 +2,7 @@
 
 - **ゴール**: workspaces の仕組みを理解し、統一スクリプトとパッケージ分割の判断ができる
 - **対象ファイル**: ルート `package.json`、`backend/package.json`、`frontend/package.json`
+- **AI 時代の位置づけ**: 依存グラフとスクリプトの責任範囲を読み、AI の変更を安全に適用する
 
 ## 1. モノレポとは何か、何が嬉しいのか
 
@@ -153,17 +154,37 @@ npm -w backend exec tsc -- --noEmit
 npm run typecheck
 ```
 
-## 7. 演習
+## 7. AI ドリル — 予測・レビュー・改修
 
-1. **scripts を増やす**: ルートに `dev:all` (両方並行起動) を追加せよ。
-   ヒント: `npm run dev:backend & npm run dev:frontend` では Ctrl-C が片方にしか
-   届かない。`npm-run-all2` のようなパッケージを入れるのが正攻法だが、
-   `&` 案との違いを言葉で説明できれば OK
-2. **幽霊依存の実験**: `backend` のコードに `import ... from "next/..."` を
-   書くとどうなるか? (hoisting により参照できてしまうか、壊れるか確認し、
-   `package.json` に next を書くべきでない理由を考えよ)
-3. **紙上設計**: `packages/shared` を作って `BookStatus` と `Stats` だけ共有する
-   構成の `package.json` と `tsconfig.json` を書いてみる (実装は任意)
+### 7.1 予測 — 実行前に当てる
+
+1. `frontend` の `typecheck` が失敗したとき、次の backend の型チェックは実行
+   されるか。ルート script の `&&` と `;` の違いを根拠に予測する
+2. `backend` に `next` の import を一行だけ追加した場合、hoisting の有無にかかわらず
+   `backend/package.json` に依存を書くべきかを予測し、`npm ls` で確認する
+
+### 7.2 レビュー — AI の出力を審査する
+
+AI が「モノレポなら依存はルートに集めればよい」と提案した。次の変更の問題点を
+phantom dependency と workspace の責任範囲の観点から指摘する。
+
+```json
+{
+  "dependencies": {
+    "next": "16.3.8",
+    "hono": "4.13.12"
+  }
+}
+```
+
+さらに、AI が `typecheck` の `&&` を `;` に置き換えた場合、CI の失敗判定に
+どんな変化があるかを説明する。
+
+### 7.3 改修 — AI の失敗を直す
+
+AI に「backend と frontend を一つのコマンドで起動して」と依頼する。生成された
+`dev:all` を実行し、Ctrl-C で両方が終了するか、片方が落ちたときに失敗が伝わるかを
+検証する。必要なら `npm-run-all2` などの導入を提案し、依存追加の理由も記録する。
 
 ## 8. まとめ
 

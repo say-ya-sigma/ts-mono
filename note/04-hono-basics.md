@@ -2,6 +2,7 @@
 
 - **ゴール**: Hono のルーティング/Context/レスポンス API を使いこなせる
 - **対象ファイル**: `backend/src/index.ts` (88 行、全体)
+- **AI 時代の位置づけ**: HTTP の入力・結果・責務の翻訳を読み、AI が層を混ぜていないか判定する
 
 ## 1. Hono とは
 
@@ -172,14 +173,33 @@ curl -i http://localhost:8787/api/nothing
 #    Ctrl-C → npm run dev:backend → curl http://localhost:8787/api/books
 ```
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **`GET /api/health` を追加せよ** — `{ ok: true, uptimeMs: ... }` を返す。
-   `Date.now()` の差分で実装できる (ヒント: モジュールの先頭で開始時刻を取る)
-2. **`GET /api/books/:id` を真似して `GET /api/statuses`** を追加 —
-   `BOOK_STATUSES` をそのまま返す (フロントの選択肢が API 経由で取れる形)
-3. **思考問題**: `c.req.json().catch(() => null)` の代わりに try/catch を
-   使うとコードはどう変わるか? どちらが読みやすいか自分の基準を持つ
+### 8.1 予測 — 実行前に当てる
+
+1. 存在しない ID、未知のパス、不正な JSON body をそれぞれ叩いたとき、
+   `404` と `400` のどちらになるか、どのハンドラが担当するかを予測する
+2. `c.req.json()` を await せずに `store.createBook` へ渡した場合、`store` に届く
+   値の実体と結果の型がどう変わるかを説明する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が POST ルートを次のように書いた。少なくとも 3 つの問題を、Context・非同期処理・
+HTTP 応答の観点から指摘する。
+
+```ts
+app.post("/api/books", (c) => {
+  const body = c.req.json()
+  const result = store.createBook(body)
+  return c.json({ item: result.book })
+})
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に `GET /api/health` または `GET /api/statuses` を追加させる。生成されたルートが
+正しい HTTP メソッド・JSON の形・成功ステータスを使っているかを `curl -i` で確認し、
+未知のパスや例外時の統一形式を壊していれば最小差分で修正する。
 
 ## 9. まとめ
 

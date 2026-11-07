@@ -2,6 +2,7 @@
 
 - **ゴール**: App Router のファイル規約とサーバー/クライアントの境界を理解する
 - **対象ファイル**: `frontend/src/app/layout.tsx`、`frontend/src/app/page.tsx`、`frontend/src/components/BookManager.tsx` (1 行目)、`frontend/next.config.ts`
+- **AI 時代の位置づけ**: サーバー/クライアント境界を仕様として読み、不要なクライアント化を防ぐ
 
 ## 1. App Router の考え方 — ファイルが URL になる
 
@@ -158,18 +159,36 @@ npm run dev:frontend
    **型エラー/実行エラー** を観察する (クライアント API の使用が境界で
    検出される体感) → 戻す
 
-## 8. 演習
+## 8. AI ドリル — 予測・レビュー・改修
 
-1. **`/about` ページを追加**: `src/app/about/page.tsx` を作り、このデモの
-   構成図 (第 01 回) を静的な HTML で表示せよ。**`"use client"` を書かずに** 
-   完結させること (Server Component のままで作れる体験が目的)
-2. **`/about` に共通ナビを付ける**: `layout.tsx` に `/` と `/about` のリンクを
-   追加し、ページを移動してもナビが**再マウントされない**ことを確認せよ
-   (ブラウザの Console に「マウントされた」ログを仕込むと分かりやすい)
-3. **思考問題**: `page.tsx` がサーバーコンポーネントのまま、
-   「初期の一覧 15 冊だけ SSR して、以降の操作はクライアントで再取得」
-   するにはどう構成するか調べよ (ヒント: 初期 props / Server Actions 等の
-   キーワード。実装は第 15 回の発展課題)
+### 8.1 予測 — 実行前に当てる
+
+1. `page.tsx` に `"use client"` を追加した場合、どのコンポーネントまでブラウザ側へ
+   広がるか、現在の `BookManager.tsx` の境界から予測する
+2. `BookManager.tsx` の `"use client"` を外した場合、`useState`・`useEffect`・イベント
+   ハンドラのどれが境界違反になるかを予測してから保存する
+
+### 8.2 レビュー — AI の出力を審査する
+
+AI が「最初から全部 Client Component にすれば簡単」と提案した。次の変更について、
+境界の広がり、ブラウザへ送る JavaScript、Server Component の利点の観点からレビューする。
+
+```tsx
+// frontend/src/app/page.tsx
+"use client"
+
+import BookManager from "@/components/BookManager"
+
+export default function Home() {
+  return <BookManager />
+}
+```
+
+### 8.3 改修 — AI の失敗を直す
+
+AI に `/about` ページと共通ナビを追加させる。`/about` は `"use client"` なしで
+完成させ、ページ間で維持したい UI を `layout.tsx` に置く。実際に移動して、不要な
+再マウントや Server Component のクライアント化が起きていないか確認する。
 
 ## 9. まとめ
 
